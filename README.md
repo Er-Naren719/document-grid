@@ -59,3 +59,4 @@ yarn start
 
 ## Part 4: Deployment
 - Have included the docker file named Dockerfile.dev
+- Have also added crudHandlers.js which has code for hypothetical APIs for this project if you had to allow for adding, removing and  updating the elements
