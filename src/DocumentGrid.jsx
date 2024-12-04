@@ -98,6 +98,9 @@ function DocumentGrid() {
 	const [selectedDocument, setSelectedDocument] = useState(null);
 	const [imageLoading, setImageLoading] = useState({});
 	const [draggedItem, setDraggedItem] = useState(null);
+	const [isSaving, setIsSaving] = useState(false);
+	const [lastSaveTime, setLastSaveTime] = useState(null);
+	const previousDocumentsRef = useRef(null);
 
 	const dragItem = useRef(null);
 	const dragOverItem = useRef(null);
@@ -105,13 +108,36 @@ function DocumentGrid() {
 	useEffect(() => {
 		fetch("/api/documents")
 			.then((res) => res.json())
-			.then((data) => setDocuments(data));
-		// Preload images
-		Object.values(thumbnails).forEach((url) => {
-			const img = new Image();
-			img.src = url;
-		});
+			.then((data) => {
+				setDocuments(data);
+				previousDocumentsRef.current = data;
+			});
 	}, []);
+
+	useEffect(() => {
+		const saveInterval = setInterval(() => {
+			// Check if documents have changed
+			const hasChanges =
+				JSON.stringify(documents) !==
+				JSON.stringify(previousDocumentsRef.current);
+
+			if (hasChanges) {
+				setIsSaving(true);
+				try {
+					// Simulate API call or actual save mechanism
+					localStorage.setItem("updatedDocumentSequence", JSON.stringify(documents));
+					previousDocumentsRef.current = documents;
+					setLastSaveTime(new Date());
+				} catch (error) {
+					console.error("Save failed", error);
+				} finally {
+					setIsSaving(false);
+				}
+			}
+		}, 5000);
+
+		return () => clearInterval(saveInterval);
+	}, [documents]);
 
 	const handleDragStart = (e, position) => {
 		dragItem.current = position;
@@ -133,18 +159,15 @@ function DocumentGrid() {
 		// Insert dragged item at new position
 		newDocuments.splice(dragOverItem.current, 0, draggedItemContent);
 
-		// Reset references
-		dragItem.current = null;
-		dragOverItem.current = null;
-
 		// Update positions
 		const updatedDocuments = newDocuments.map((doc, index) => ({
 			...doc,
 			position: index,
 		}));
 
-		localStorage.setItem("updatedDocumentSequence", JSON.stringify(updatedDocuments));
-		console.log(updatedDocuments, "updatedDocuments");
+		// Reset references
+		dragItem.current = null;
+		dragOverItem.current = null;
 
 		setDocuments(updatedDocuments);
 		setDraggedItem(null);
@@ -169,8 +192,26 @@ function DocumentGrid() {
 		return () => window.removeEventListener("keydown", handleEscape);
 	}, []);
 
+	const getSaveStatus = () => {
+		if (isSaving) return "Saving...";
+		if (lastSaveTime) {
+			const timeSinceLastSave = Math.round((new Date() - lastSaveTime) / 1000);
+			return `Last saved ${timeSinceLastSave} seconds ago`;
+		}
+		return "Not saved";
+	};
+
 	return (
 		<div style={styles.gridContainer}>
+			<div
+				style={{
+					textAlign: "center",
+					marginBottom: "10px",
+					color: isSaving ? "blue" : "gray",
+				}}
+			>
+				{getSaveStatus()}
+			</div>
 			<div style={styles.grid}>
 				{documents.map((doc, index) => (
 					<div
