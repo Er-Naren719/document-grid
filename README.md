@@ -54,3 +54,8 @@ yarn start
 
 ## Part 3: Tying it up!
 - Using API, the gid now shows the updated sequence of documents(without local storage data the document sequence resets to existing one).
+- The logic to call API every five seconds implemented.
+- The logic to check last saved implemented using previousDocumentsRef. It will check it against current documents, if it has changed then only it will save data.
+
+## Part 4: Deployment
+- Have included the docker file named Dockerfile.dev
